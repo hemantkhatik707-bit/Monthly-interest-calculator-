@@ -1,1 +1,369 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultimate Multi-Stage Compounding Calculator</title>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --background: #f8fafc;
+            --card: #ffffff;
+            --text: #0f172a;
+            --border: #e2e8f0;
+            --green: #16a34a;
+            --red: #dc2626;
+            --gold: #b45309;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+
+        body {
+            background-color: var(--background);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .calculator-card {
+            background: var(--card);
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 850px;
+        }
+
+        h2 {
+            color: var(--primary);
+            text-align: center;
+            margin-bottom: 25px;
+            font-size: 24px;
+        }
+
+        .input-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 10px;
+        }
+
+        @media (max-width: 600px) {
+            .input-grid { grid-template-columns: 1fr; }
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 12px;
+        }
+
+        label {
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #475569;
+        }
+
+        .input-with-unit {
+            display: flex;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+            background: white;
+        }
+
+        .input-with-unit:focus-within {
+            border-color: var(--primary);
+        }
+
+        .input-with-unit input {
+            flex: 1;
+            padding: 10px 14px;
+            border: none;
+            font-size: 15px;
+            outline: none;
+            width: 100%;
+        }
+
+        .input-with-unit select {
+            padding: 0 10px;
+            border: none;
+            border-left: 1px solid var(--border);
+            background: #f8fafc;
+            font-size: 14px;
+            font-weight: 600;
+            color: #475569;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .live-preview {
+            font-size: 11px;
+            color: #64748b;
+            margin-top: 4px;
+            font-weight: 500;
+            min-height: 16px;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+
+        button:hover {
+            background: var(--primary-hover);
+        }
+
+        .results-section {
+            margin-top: 25px;
+            border-top: 2px solid var(--border);
+            padding-top: 20px;
+            display: none;
+        }
+
+        .table-container {
+            margin-top: 15px;
+            max-height: 450px;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            text-align: left;
+        }
+
+        th {
+            background: #f1f5f9;
+            padding: 12px 10px;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        td {
+            padding: 12px 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .c-green { color: var(--green); font-weight: bold; }
+        .c-red { color: var(--red); font-weight: bold; }
+        .c-gold { color: var(--gold); font-weight: bold; }
+        
+        .badge {
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: bold;
+            display: inline-block;
+        }
+        .badge-growth { background: #dbeafe; color: #1e40af; }
+        .badge-wd50 { background: #fef08a; color: #854d0e; }
+        .badge-cr { background: #dcfce7; color: #14532d; }
+    </style>
+</head>
+<body>
+
+<div class="calculator-card">
+    <h2>Multi-Stage Compound & Cap Calculator</h2>
+    
+    <div class="input-grid">
+        <div class="input-group">
+            <label>Initial Investment</label>
+            <div class="input-with-unit">
+                <input type="number" id="investment" value="1000" oninput="updatePreviews()">
+                <select id="investmentUnit" onchange="updatePreviews()">
+                    <option value="1" selected>₹</option>
+                    <option value="100000">Lakh</option>
+                    <option value="10000000">Cr</option>
+                </select>
+            </div>
+            <div class="live-preview" id="investmentPreview"></div>
+        </div>
+
+        <div class="input-group">
+            <label>Monthly Interest (%)</label>
+            <div class="input-with-unit">
+                <input type="number" id="interestRate" value="1000">
+                <span style="padding: 10px; background: #f8fafc; font-weight: bold; border-left: 1px solid var(--border);">%</span>
+            </div>
+            <div class="live-preview"></div>
+        </div>
+
+        <div class="input-group">
+            <label>Stage 1 Target (Start 50k WD)</label>
+            <div class="input-with-unit">
+                <input type="number" id="stage1Target" value="50" oninput="updatePreviews()">
+                <select id="stage1TargetUnit" onchange="updatePreviews()">
+                    <option value="1">₹</option>
+                    <option value="100000" selected>Lakh</option>
+                    <option value="10000000">Cr</option>
+                </select>
+            </div>
+            <div class="live-preview" id="stage1Preview"></div>
+        </div>
+
+        <div class="input-group">
+            <label>Stage 2 Cap (Reinvest Limit)</label>
+            <div class="input-with-unit">
+                <input type="number" id="stage2Cap" value="20" oninput="updatePreviews()">
+                <select id="stage2CapUnit" onchange="updatePreviews()">
+                    <option value="1">₹</option>
+                    <option value="100000">Lakh</option>
+                    <option value="10000000" selected>Cr</option>
+                </select>
+            </div>
+            <div class="live-preview" id="stage2Preview"></div>
+        </div>
+    </div>
+    
+    <div class="input-group">
+        <label>Simulate Months</label>
+        <div class="input-with-unit" style="max-width: 50%;">
+            <input type="number" id="months" value="12">
+        </div>
+    </div>
+
+    <button onclick="runUltimateSimulation()">Calculate Ultimate Loop</button>
+
+    <div class="results-section" id="results">
+        <h3 style="font-size: 15px; margin-bottom: 10px; color: #334155;">System Flow Statement:</h3>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Month</th>
+                        <th>Opening Bal.</th>
+                        <th>Interest (+1000%)</th>
+                        <th>Total Before WD</th>
+                        <th>Current WD</th>
+                        <th>Total Cash Withdrawn</th>
+                        <th>Reinvest (Closing)</th>
+                        <th>Stage</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    function getAbsoluteValue(inputId, unitId) {
+        const val = parseFloat(document.getElementById(inputId).value) || 0;
+        const multiplier = parseFloat(document.getElementById(unitId).value);
+        return val * multiplier;
+    }
+
+    function updatePreviews() {
+        const inv = getAbsoluteValue('investment', 'investmentUnit');
+        const s1 = getAbsoluteValue('stage1Target', 'stage1TargetUnit');
+        const s2 = getAbsoluteValue('stage2Cap', 'stage2CapUnit');
+
+        document.getElementById('investmentPreview').innerText = inv > 0 ? `= ₹ ${inv.toLocaleString('en-IN')}` : '';
+        document.getElementById('stage1Preview').innerText = s1 > 0 ? `= ₹ ${s1.toLocaleString('en-IN')}` : '';
+        document.getElementById('stage2Preview').innerText = s2 > 0 ? `= ₹ ${s2.toLocaleString('en-IN')}` : '';
+    }
+
+    function formatIndianCurrency(num) {
+        if (num === 0) return "₹0";
+        if (num >= 10000000) {
+            return "₹" + (num / 10000000).toFixed(2) + " Cr";
+        } else if (num >= 100000) {
+            return "₹" + (num / 100000).toFixed(2) + " Lakh";
+        }
+        return "₹" + num.toLocaleString('en-IN', { maximumFractionDigits: 0 });
+    }
+
+    function runUltimateSimulation() {
+        let openingBalance = getAbsoluteValue('investment', 'investmentUnit');
+        const rate = parseFloat(document.getElementById('interestRate').value) / 100;
+        const stage1Target = getAbsoluteValue('stage1Target', 'stage1TargetUnit');
+        const stage2Cap = getAbsoluteValue('stage2Cap', 'stage2CapUnit');
+        const totalMonths = parseInt(document.getElementById('months').value);
+
+        if (isNaN(openingBalance) || isNaN(rate) || isNaN(stage1Target) || isNaN(stage2Cap) || isNaN(totalMonths) || openingBalance <= 0) {
+            alert("Please enter valid positive numbers.");
+            return;
+        }
+
+        let tableHTML = '';
+        let runningTotalWithdrawal = 0; // Yeh withdraw kiye huye paise ko har mahine total karega
+
+        for (let m = 1; m <= totalMonths; m++) {
+            let interestEarned = openingBalance * rate;
+            let totalBeforeWithdrawal = openingBalance + interestEarned;
+            
+            let actualWithdrawal = 0;
+            let closingReinvest = 0;
+            let stageStatus = '';
+
+            if (totalBeforeWithdrawal >= stage2Cap) {
+                closingReinvest = stage2Cap;
+                actualWithdrawal = totalBeforeWithdrawal - stage2Cap;
+                stageStatus = '<span class="badge badge-cr">20Cr Cap Active</span>';
+            } else if (totalBeforeWithdrawal >= stage1Target) {
+                actualWithdrawal = 50000;
+                closingReinvest = totalBeforeWithdrawal - actualWithdrawal;
+                stageStatus = '<span class="badge badge-wd50">₹50k WD</span>';
+            } else {
+                actualWithdrawal = 0;
+                closingReinvest = totalBeforeWithdrawal;
+                stageStatus = '<span class="badge badge-growth">Growth</span>';
+            }
+
+            // Withdraw kiye huye paise ko total (accumulate) kar rahe hain
+            runningTotalWithdrawal += actualWithdrawal;
+
+            tableHTML += `
+                <tr>
+                    <td><strong>Month ${m}</strong></td>
+                    <td>${formatIndianCurrency(openingBalance)}</td>
+                    <td class="c-green">+${formatIndianCurrency(interestEarned)}</td>
+                    <td>${formatIndianCurrency(totalBeforeWithdrawal)}</td>
+                    <td class="${actualWithdrawal > 0 ? 'c-red' : ''}">${actualWithdrawal > 0 ? '-' + formatIndianCurrency(actualWithdrawal) : '₹0'}</td>
+                    <td class="c-gold">${formatIndianCurrency(runningTotalWithdrawal)}</td>
+                    <td><strong>${formatIndianCurrency(closingReinvest)}</strong></td>
+                    <td>${stageStatus}</td>
+                </tr>
+            `;
+
+            openingBalance = closingReinvest;
+        }
+
+        document.getElementById('tableBody').innerHTML = tableHTML;
+        document.getElementById('results').style.display = 'block';
+    }
+
+    window.onload = function() {
+        updatePreviews();
+        runUltimateSimulation();
+    };
+</script>
+</body>
+</html>
+
